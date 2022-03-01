@@ -1,6 +1,7 @@
 package com.heechul.camerax_sample
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import com.heechul.camerax_sample.databinding.ActivityCameraBinding
+import java.io.File
 
 
 const val KEY_EVENT_ACTION = "key_event_action"
@@ -64,6 +66,16 @@ class CameraActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    companion object {
+        fun getOutputDirectory(context: Context): File {
+            val appContext = context.applicationContext
+            val mediaDir = context.externalMediaDirs.firstOrNull()?.let {
+                File(it, appContext.resources.getString(R.string.app_name)).apply { mkdirs() } }
+            return if (mediaDir != null && mediaDir.exists())
+                mediaDir else appContext.filesDir
         }
     }
 }

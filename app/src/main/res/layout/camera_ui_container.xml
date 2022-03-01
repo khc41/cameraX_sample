@@ -25,4 +25,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/view"
         app:srcCompat="@drawable/capture_button" />
+
+    <ImageButton
+        android:id="@+id/camera_switch_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:layout_constraintBottom_toBottomOf="@+id/camera_capture_button"
+        app:layout_constraintEnd_toEndOf="@+id/view"
+        app:layout_constraintStart_toEndOf="@+id/camera_capture_button"
+        app:layout_constraintTop_toTopOf="@+id/camera_capture_button"
+        app:srcCompat="@drawable/switch_button" />
 </androidx.constraintlayout.widget.ConstraintLayout>
