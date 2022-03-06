@@ -3,9 +3,11 @@ package com.heechul.camerax_sample
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.FrameLayout
@@ -33,12 +35,13 @@ class CameraActivity : AppCompatActivity() {
         super.onResume()
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
-            val controller = window.insetsController
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars())
-                controller.systemBarsBehavior =
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
+
+//            val controller = window.insetsController
+//            if (controller != null) {
+//                controller.hide(WindowInsets.Type.statusBars())
+//                controller.systemBarsBehavior =
+//                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+//            }
         } else
             viewBinding.container.systemUiVisibility = FLAGS_FULLSCREEN
 
