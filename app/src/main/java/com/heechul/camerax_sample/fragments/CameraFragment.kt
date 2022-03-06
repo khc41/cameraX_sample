@@ -13,9 +13,13 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.webkit.MimeTypeMap
 import android.widget.ImageButton
 import androidx.camera.core.*
@@ -30,6 +34,7 @@ import com.heechul.camerax_sample.*
 import com.heechul.camerax_sample.R
 import com.heechul.camerax_sample.databinding.CameraUiContainerBinding
 import com.heechul.camerax_sample.databinding.FragmentCameraBinding
+import com.heechul.camerax_sample.views.AnimationImageView
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -52,11 +57,17 @@ class CameraFragment : Fragment() {
     private lateinit var viewFinder: PreviewView
     private lateinit var container: ConstraintLayout
     private lateinit var outputDirectory: File
+    private lateinit var focusImage: AnimationImageView
+    private lateinit var mScaleFocusAnimation: Animation
+
+    private val NONE = 0
+    private val FOCUS = 1
+    private val ZOOM = 2
+    private var mode = NONE
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     }
-
 
     private lateinit var cameraExecutor: ExecutorService
 
@@ -236,6 +247,18 @@ class CameraFragment : Fragment() {
         return AspectRatio.RATIO_16_9
     }
 
+    inline fun View.afterMeasured(crossinline block: () -> Unit) {
+        viewTreeObserver.addOnGlobalLayoutListener(object :
+            ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (measuredWidth > 0 && measuredHeight > 0) {
+                    viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    block()
+                }
+            }
+        })
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun updateCameraUi() {
         // Remove previous UI if any
@@ -245,6 +268,21 @@ class CameraFragment : Fragment() {
 
         // Inflate a new view containing all UI for controlling the camera
         val controls = View.inflate(requireContext(), R.layout.camera_ui_container, container)
+
+        focusImage = controls.findViewById(R.id.focus_image)
+        mScaleFocusAnimation = AnimationUtils.loadAnimation(context, R.anim.scale_anim)
+        mScaleFocusAnimation.duration = 200
+        mScaleFocusAnimation.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationStart(animation: Animation?) {}
+
+            override fun onAnimationEnd(animation: Animation?) {
+                focusImage.focusSuccess()
+                Handler(Looper.getMainLooper()).postDelayed({ focusImage.stopFocus() }, 500)
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {}
+        })
+        focusImage.setmAnimation(mScaleFocusAnimation)
 
         // Listen to pinch gestures
         val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -261,6 +299,57 @@ class CameraFragment : Fragment() {
 
                 // Return true, as the event was handled
                 return true
+            }
+        }
+
+        val scaleGestureDetector = ScaleGestureDetector(context, listener)
+
+        viewFinder.afterMeasured {
+            viewFinder.setOnTouchListener { _, event ->
+                scaleGestureDetector.onTouchEvent(event)
+                when (event.action and MotionEvent.ACTION_MASK) {
+                    MotionEvent.ACTION_DOWN -> {
+                        mode = FOCUS
+                        return@setOnTouchListener true
+                    }
+                    MotionEvent.ACTION_POINTER_DOWN -> {
+                        mode = ZOOM
+                        return@setOnTouchListener true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                        if (mode == FOCUS) {
+                            try {
+                                // Get the MeteringPointFactory from PreviewView
+                                val factory = viewFinder.meteringPointFactory
+                                // Create a MeteringPoint from the tap coordinates
+                                val point = factory.createPoint(event.x, event.y)
+                                // Create a MeteringAction from the MeteringPoint, you can configure it to specify the metering mode
+                                val action =
+                                    FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+                                        .build()
+                                // Trigger the focus and metering. The method returns a ListenableFuture since the operation
+                                // is asynchronous. You can use it get notified when the focus is successful or if it fails.
+                                camera?.cameraControl?.startFocusAndMetering(action)
+
+                                val width: Int = focusImage.width
+                                val height: Int = focusImage.height
+                                val lp = focusImage.layoutParams as ConstraintLayout.LayoutParams
+//                                debug("${event.rawX} ${event.rawY} $width $height")
+                                lp.marginStart = (event.rawX - (width / 2)).toInt()
+                                lp.topMargin = (event.rawY - (height / 2)).toInt()
+
+                                focusImage.layoutParams = lp
+                                focusImage.startFocusing()
+
+                            } catch (e: CameraInfoUnavailableException) {
+                                Log.d("ERROR", "cannot access camera", e)
+                            }
+                        }
+                        mode = NONE
+                        true
+                    }
+                    else -> false // Unhandled event.
+                }
             }
         }
 
