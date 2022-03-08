@@ -204,7 +204,6 @@ class CameraFragment : Fragment() {
         preview = Preview.Builder()
             // We request aspect ratio but no resolution
             .setTargetAspectRatio(screenAspectRatio)
-//            .setTargetResolution(size)
             // Set initial target rotation
             .setTargetRotation(rotation)
             .build()
@@ -215,7 +214,6 @@ class CameraFragment : Fragment() {
             // We request aspect ratio but no resolution to match preview config, but letting
             // CameraX optimize for whatever specific resolution best fits our use cases
             .setTargetAspectRatio(screenAspectRatio)
-//            .setTargetResolution(size)
             // Set initial target rotation, we will have to call this again if rotation changes
             // during the lifecycle of this use case
             .setTargetRotation(rotation)
@@ -262,14 +260,19 @@ class CameraFragment : Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     private fun updateCameraUi() {
         // Remove previous UI if any
-        container.findViewById<ConstraintLayout>(R.id.camera_ui_container).let {
-            container.removeView(it)
+        cameraUiContainerBinding?.root?.let {
+            fragmentCameraBinding.root.removeView(it)
         }
 
-        // Inflate a new view containing all UI for controlling the camera
-        val controls = View.inflate(requireContext(), R.layout.camera_ui_container, container)
+        cameraUiContainerBinding = CameraUiContainerBinding.inflate(
+            LayoutInflater.from(requireContext()),
+            fragmentCameraBinding.root,
+            true
+        )
 
-        focusImage = controls.findViewById(R.id.focus_image)
+        // Inflate a new view containing all UI for controlling the camera
+
+        focusImage = cameraUiContainerBinding?.focusImage!!
         mScaleFocusAnimation = AnimationUtils.loadAnimation(context, R.anim.scale_anim)
         mScaleFocusAnimation.duration = 200
         mScaleFocusAnimation.setAnimationListener(object : Animation.AnimationListener {
@@ -334,7 +337,6 @@ class CameraFragment : Fragment() {
                                 val width: Int = focusImage.width
                                 val height: Int = focusImage.height
                                 val lp = focusImage.layoutParams as ConstraintLayout.LayoutParams
-//                                debug("${event.rawX} ${event.rawY} $width $height")
                                 lp.marginStart = (event.rawX - (width / 2)).toInt()
                                 lp.topMargin = (event.rawY - (height / 2)).toInt()
 
@@ -354,13 +356,11 @@ class CameraFragment : Fragment() {
         }
 
         // Listener for button used to capture photo
-        controls.findViewById<ImageButton>(R.id.camera_capture_button).setOnClickListener {
-
+        cameraUiContainerBinding?.cameraCaptureButton?.setOnClickListener {
+            Log.d("123","@!#!@#!@#")
             // Get a stable reference of the modifiable image capture use case
             imageCapture?.let { imageCapture ->
-                it.isEnabled = false
-//                val filter = FilterManager.getFilter(SignorManager.currentFilter)
-//                // Create output file to hold the image
+                // Create output file to hold the image
                 val photoFile =
                     createFile(outputDirectory, FILENAME, PHOTO_EXTENSION)
 
@@ -423,11 +423,27 @@ class CameraFragment : Fragment() {
                 container.postDelayed({
                     container.foreground = ColorDrawable(Color.WHITE)
                     container.foreground.alpha = 50
-                    cameraProvider!!.unbind(preview)
                     container.postDelayed(
                         { container.foreground = null }, ANIMATION_FAST_MILLIS
                     )
                 }, ANIMATION_SLOW_MILLIS)
+            }
+        }
+
+        cameraUiContainerBinding?.cameraSwitchButton?.let {
+
+            // Disable the button until the camera is set up
+            it.isEnabled = false
+
+            // Listener for button used to switch cameras. Only called if the button is enabled
+            it.setOnClickListener {
+                lensFacing = if (CameraSelector.LENS_FACING_FRONT == lensFacing) {
+                    CameraSelector.LENS_FACING_BACK
+                } else {
+                    CameraSelector.LENS_FACING_FRONT
+                }
+                // Re-bind use cases to update selected camera
+                bindCameraUseCases()
             }
         }
     }

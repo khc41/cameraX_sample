@@ -20,7 +20,6 @@ import java.io.File
 const val KEY_EVENT_ACTION = "key_event_action"
 const val KEY_EVENT_EXTRA = "key_event_extra"
 const val CAMERA_PERMISSION = 0
-private const val IMMERSIVE_FLAG_TIMEOUT = 500L
 
 class CameraActivity : AppCompatActivity() {
     private lateinit var viewBinding: ActivityCameraBinding
@@ -35,15 +34,7 @@ class CameraActivity : AppCompatActivity() {
         super.onResume()
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
-
-//            val controller = window.insetsController
-//            if (controller != null) {
-//                controller.hide(WindowInsets.Type.statusBars())
-//                controller.systemBarsBehavior =
-//                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-//            }
-        } else
-            viewBinding.container.systemUiVisibility = FLAGS_FULLSCREEN
+        }
 
         if (ActivityCompat.checkSelfPermission(
                 this,
