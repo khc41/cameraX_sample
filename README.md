@@ -1,5 +1,5 @@
 # cameraX_sample
-Camera X with Zoom in-out & Auto Focus 
+CameraX with Zoom in-out & Auto Focus 
 
 ![Screen_Recording_20220308-231910_camerax_sample](https://user-images.githubusercontent.com/31720024/157257005-53ffe409-f4d3-4293-99ca-81a1c6d37a52.gif)
 ![Screen_Recording_20220308-232501_camerax_sample (1)](https://user-images.githubusercontent.com/31720024/157258432-f1024a7b-2ce5-4fb9-8982-582948327322.gif)
